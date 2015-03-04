@@ -1,0 +1,35 @@
+<?php
+/**
+ * @file
+ *
+ */
+
+/**
+ * Implements hook_field_formatter_settings_form().
+ */
+function insert_hide_field_formatter_settings_form_alter(array &$settings_form, array $context) {
+
+  $options = array();
+
+  $instances = field_info_instances($context['instance']['entity_type'], $context['instance']['bundle']);
+  foreach ($instances as $field_name => $instance) {
+    $field = field_info_field($field_name);
+    switch ($field['type']) {
+      case 'text_with_summary':
+        $options[$field_name] = $instance['label'];
+        break;
+
+      default:
+        break;
+    }
+  }
+
+  if ($context['field']['type'] == 'image') {
+    $settings_form['insert_hide'] = array(
+      '#type' => 'select',
+      '#title' => t('Hide item if also existing in:'),
+      '#multiple' => TRUE,
+      '#options' => $options,
+    );
+  }
+}
