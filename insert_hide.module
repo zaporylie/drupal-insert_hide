@@ -7,7 +7,7 @@
 /**
  * Implements hook_field_formatter_settings_form().
  */
-function insert_hide_field_formatter_settings_form_alter(array &$settings_form, array $context) {
+function insert_hide_field_formatter_settings_form_alter(&$settings_form, $context) {
 
   $options = array();
 
@@ -29,7 +29,17 @@ function insert_hide_field_formatter_settings_form_alter(array &$settings_form, 
       '#type' => 'select',
       '#title' => t('Hide item if also existing in:'),
       '#multiple' => TRUE,
+      '#default_value' => $context['instance']['display'][$context['view_mode']]['settings']['insert_hide'],
       '#options' => $options,
     );
   }
+}
+
+/**
+ * Implements hook_field_formatter_info_alter().
+ */
+function insert_hide_field_formatter_info_alter(&$info) {
+  $info['image']['settings'] += array(
+    'insert_hide' => array(),
+  );
 }
