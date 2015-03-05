@@ -10,7 +10,7 @@
 function insert_hide_field_formatter_settings_form_alter(&$settings_form, $context) {
 
   $options = array();
-
+  dpm($context);
   $instances = field_info_instances($context['instance']['entity_type'], $context['instance']['bundle']);
   foreach ($instances as $field_name => $instance) {
     $field = field_info_field($field_name);
@@ -27,7 +27,7 @@ function insert_hide_field_formatter_settings_form_alter(&$settings_form, $conte
   if ($context['field']['type'] == 'image') {
     $settings_form['insert_hide'] = array(
       '#type' => 'select',
-      '#title' => t('Hide item if also existing in:'),
+      '#title' => t('Hide item if exists in:'),
       '#multiple' => TRUE,
       '#default_value' => $context['instance']['display'][$context['view_mode']]['settings']['insert_hide'],
       '#options' => $options,
@@ -42,4 +42,90 @@ function insert_hide_field_formatter_info_alter(&$info) {
   $info['image']['settings'] += array(
     'insert_hide' => array(),
   );
+}
+
+/**
+ * Implements hook_field_formatter_settings_summary_alter().
+ */
+function insert_hide_field_formatter_settings_summary_alter(&$summary, array $context) {
+  switch ($context['field']['type']) {
+    case 'image':
+      if (!empty($context['instance']['display'][$context['view_mode']]['settings']['insert_hide'])) {
+        $summary .= '<br/>' . t('Items hidden if exist in:') . ' ' . implode(', ', $context['instance']['display'][$context['view_mode']]['settings']['insert_hide']);
+      }
+      break;
+
+    default:
+      break;
+  }
+}
+
+/**
+ * Implements hook_preprocess_HOOK().
+ */
+function insert_hide_preprocess_field(&$variables) {
+  $entity_type = $variables['element']['#entity_type'];
+  $field_name  = $variables['element']['#field_name'];
+  $bundle      = $variables['element']['#bundle'];
+  $view_mode   = $variables['element']['#view_mode'];
+  $entity      = $variables['element']['#object'];
+
+  $formatter_settings = field_formatter_settings_get_instance_display_settings($entity_type, $field_name, $bundle, $view_mode);
+  if (isset($formatter_settings['insert_hide']) && !empty($formatter_settings['insert_hide'])) {
+    foreach ($variables['element']['#items'] as $delta => $item) {
+      if (_insert_hide_parse_row($item, $entity_type, $entity, $formatter_settings['insert_hide'])) {
+        // Hide
+        $variables['items'][$delta]['#access'] = FALSE;
+        break;
+      }
+    }
+  }
+}
+
+/**
+ * Parse single file.
+ *
+ * @param $file
+ * @param $entity_type
+ * @param $entity
+ * @param $fields
+ *
+ * @return bool
+ */
+function _insert_hide_parse_row($file, $entity_type, $entity, $fields) {
+  $scheme = file_uri_scheme($file['uri']);
+  $path = substr($file['uri'], strlen($scheme) + 3);
+  try {
+    $wrapper = entity_metadata_wrapper($entity_type, $entity);
+  }
+  catch (Exception $e) {
+    watchdog_exception('insert_hide', $e);
+    return FALSE;
+  }
+
+  foreach ($fields as $field_name) {
+    if (isset($wrapper->{$field_name})) {
+      switch ($wrapper->{$field_name}->type()) {
+        case 'text_formatted':
+          $data = array(
+            'needle' => $path,
+            'score' => FALSE,
+          );
+          $array = $wrapper->{$field_name}->value();
+          array_walk_recursive($array, function ($value, $key) use (&$data) {
+            if (!$data['score']) {
+              if (strpos($value, $data['needle'])) {
+                $data['score'] = TRUE;
+              }
+            }
+          });
+          if ($data['score']) {
+            return TRUE;
+          }
+          break;
+      }
+    }
+  }
+
+  return FALSE;
 }
