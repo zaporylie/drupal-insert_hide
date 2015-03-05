@@ -1,13 +1,13 @@
 <?php
 /**
  * @file
- *
+ * Hide file from multi-value field if it exists in in other field in display.
  */
 
 /**
  * Implements hook_field_formatter_settings_form().
  */
-function insert_hide_field_formatter_settings_form_alter(&$settings_form, $context) {
+function insert_hide_file_field_formatter_settings_form_alter(&$settings_form, $context) {
   if (in_array($context['field']['type'], array('image', 'file'))) {
     $options = array();
 
@@ -15,11 +15,11 @@ function insert_hide_field_formatter_settings_form_alter(&$settings_form, $conte
     foreach ($instances as $field_name => $instance) {
       $options[$field_name] = $instance['label'];
     }
-    $settings_form['insert_hide'] = array(
+    $settings_form['insert_hide_file'] = array(
       '#type' => 'select',
       '#title' => t('Hide item if exists in:'),
       '#multiple' => TRUE,
-      '#default_value' => $context['instance']['display'][$context['view_mode']]['settings']['insert_hide'],
+      '#default_value' => $context['instance']['display'][$context['view_mode']]['settings']['insert_hide_file'],
       '#options' => $options,
     );
   }
@@ -28,11 +28,11 @@ function insert_hide_field_formatter_settings_form_alter(&$settings_form, $conte
 /**
  * Implements hook_field_formatter_info_alter().
  */
-function insert_hide_field_formatter_info_alter(&$info) {
+function insert_hide_file_field_formatter_info_alter(&$info) {
   // Added to all formatters.
   foreach ($info as $formatter_key => &$formatter) {
     if (in_array('image', $formatter['field types']) || in_array('file', $formatter['field types'])) {
-      $formatter['settings']['insert_hide'] = array();
+      $formatter['settings']['insert_hide_file'] = array();
     }
   }
 }
@@ -40,18 +40,18 @@ function insert_hide_field_formatter_info_alter(&$info) {
 /**
  * Implements hook_field_formatter_settings_summary_alter().
  */
-function insert_hide_field_formatter_settings_summary_alter(&$summary, array $context) {
+function insert_hide_file_field_formatter_settings_summary_alter(&$summary, array $context) {
   switch ($context['field']['type']) {
     case 'file':
     case 'image':
       if (!empty($summary)) {
         $summary .= '<br />';
       }
-      if (!empty($context['instance']['display'][$context['view_mode']]['settings']['insert_hide'])) {
-        $summary .= t('Items hidden if exist in:') . ' ' . implode(', ', $context['instance']['display'][$context['view_mode']]['settings']['insert_hide']);
+      if (!empty($context['instance']['display'][$context['view_mode']]['settings']['insert_hide_file'])) {
+        $summary .= t('insert_hide_file filter enabled for @field', array('@field' => implode(', ', $context['instance']['display'][$context['view_mode']]['settings']['insert_hide_file'])));
       }
       else {
-        $summary .= t('Skip other field dependency');
+        $summary .= t('insert_hide_file filter is disabled');
       }
       break;
 
@@ -63,7 +63,7 @@ function insert_hide_field_formatter_settings_summary_alter(&$summary, array $co
 /**
  * Implements hook_field_attach_view_alter().
  */
-function insert_hide_field_attach_view_alter(&$output, $context) {
+function insert_hide_file_field_attach_view_alter(&$output, $context) {
   foreach (element_children($output) as $field_name) {
 
     $entity_type = $output[$field_name]['#entity_type'];
@@ -72,11 +72,11 @@ function insert_hide_field_attach_view_alter(&$output, $context) {
     $entity = $output[$field_name]['#object'];
 
     $formatter_settings = field_formatter_settings_get_instance_display_settings($entity_type, $field_name, $bundle, $view_mode);
-    if (isset($formatter_settings['insert_hide']) && !empty($formatter_settings['insert_hide'])) {
+    if (isset($formatter_settings['insert_hide_file']) && !empty($formatter_settings['insert_hide_file'])) {
       $i = 0;
       foreach ($output[$field_name]['#items'] as $delta => $item) {
         // If file exist in preselected field...
-        if (_insert_hide_parse_row($item, $entity, $formatter_settings['insert_hide'])) {
+        if (_insert_hide_file_parse_row($item, $entity, $formatter_settings['insert_hide_file'])) {
           // ...hide it.
           hide($output[$field_name][$delta]);
           $i++;
@@ -91,7 +91,7 @@ function insert_hide_field_attach_view_alter(&$output, $context) {
 }
 
 /**
- * Parse single file.
+ * Parse single value.
  *
  * @param $file
  * @param $entity
@@ -99,7 +99,7 @@ function insert_hide_field_attach_view_alter(&$output, $context) {
  *
  * @return bool
  */
-function _insert_hide_parse_row($file, $entity, $fields) {
+function _insert_hide_file_parse_row($file, $entity, $fields) {
   $scheme = file_uri_scheme($file['uri']);
   $path = substr($file['uri'], strlen($scheme) + 3);
 

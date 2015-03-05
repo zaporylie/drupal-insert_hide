@@ -1,5 +1,0 @@
-name = Insert Hide
-description = Search for file path in other field and shows/hides file or image.
-core = 7.x
-
-dependencies[] = file

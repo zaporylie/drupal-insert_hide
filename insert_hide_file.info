@@ -1,0 +1,5 @@
+name = Insert Hide File
+description = Hide file if it exists in other field in display.
+core = 7.x
+
+dependencies[] = file
