@@ -98,11 +98,12 @@ function insert_hide_file_field_attach_view_alter(&$output, $context) {
  * @param object $entity
  *   Parent entity.
  * @param array $fields
- *   Array of fileds keys.
+ *   Array of fields keys.
+ *
  * @return bool
  *   Search result.
  */
-function _insert_hide_file_parse_row($file, $entity, $fields) {
+function _insert_hide_file_parse_row(array $file, $entity, array $fields) {
   if (!isset($file['uri'])) {
     return FALSE;
   }
