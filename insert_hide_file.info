@@ -1,5 +1,6 @@
 name = Insert Hide File
-description = Hide file if it exists in other field in display.
+description = Hide single file if it exists in another field in display.
 core = 7.x
 
 dependencies[] = file
+dependencies[] = field_formatter_settings

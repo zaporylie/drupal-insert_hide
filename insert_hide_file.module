@@ -30,7 +30,7 @@ function insert_hide_file_field_formatter_settings_form_alter(&$settings_form, $
  */
 function insert_hide_file_field_formatter_info_alter(&$info) {
   // Added to all formatters.
-  foreach ($info as $formatter_key => &$formatter) {
+  foreach ($info as &$formatter) {
     if (in_array('image', $formatter['field types']) || in_array('file', $formatter['field types'])) {
       $formatter['settings']['insert_hide_file'] = array();
     }
@@ -83,7 +83,7 @@ function insert_hide_file_field_attach_view_alter(&$output, $context) {
         }
       }
       // Hide field if nothing to show.
-      if ($i == sizeof($output[$field_name]['#items'])) {
+      if ($i == count($output[$field_name]['#items'])) {
         hide($output[$field_name]);
       }
     }
@@ -93,14 +93,23 @@ function insert_hide_file_field_attach_view_alter(&$output, $context) {
 /**
  * Parse single value.
  *
- * @param $file
- * @param $entity
- * @param $fields
- *
+ * @param array $file
+ *   File array.
+ * @param object $entity
+ *   Parent entity.
+ * @param array $fields
+ *   Array of fileds keys.
  * @return bool
+ *   Search result.
  */
 function _insert_hide_file_parse_row($file, $entity, $fields) {
+  if (!isset($file['uri'])) {
+    return FALSE;
+  }
   $scheme = file_uri_scheme($file['uri']);
+  if (!$scheme) {
+    return FALSE;
+  }
   $path = substr($file['uri'], strlen($scheme) + 3);
 
   foreach ($fields as $field_name) {
